@@ -1,10 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/auth";
-import type { ScheduleItemRow, TaskRow, TransactionRow } from "@/lib/types";
+import type {
+  SavedPlanRow,
+  ScheduleItemRow,
+  TaskRow,
+  TransactionRow,
+} from "@/lib/types";
 
 function isoToday() {
   return new Date().toISOString().slice(0, 10);
@@ -27,22 +32,67 @@ export default function HomeDashboard() {
   const [schedule, setSchedule] = useState<ScheduleItemRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [txns, setTxns] = useState<TransactionRow[]>([]);
+  const [plans, setPlans] = useState<SavedPlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTask, setNewTask] = useState("");
 
   const load = useCallback(async () => {
     if (!supabase || !session) return;
     setLoading(true);
-    const [s, t, x] = await Promise.all([
+    const [s, t, x, p] = await Promise.all([
       supabase.from("schedule_items").select("*").eq("date", date).order("start_time"),
       supabase.from("tasks").select("*").eq("date", date).order("created_at"),
       supabase.from("transactions").select("*").eq("date", date).order("created_at"),
+      // 저장한 계획 전체를 받아, 이 날짜에 해당하는 일자별 항목을 자동으로 끌어온다
+      supabase.from("plans").select("id, goal, result, done_tasks"),
     ]);
     setSchedule((s.data as ScheduleItemRow[]) ?? []);
     setTasks((t.data as TaskRow[]) ?? []);
     setTxns((x.data as TransactionRow[]) ?? []);
+    setPlans((p.data as SavedPlanRow[]) ?? []);
     setLoading(false);
   }, [date, session]);
+
+  // 저장한 계획들에서 '선택한 날짜'의 dailyPlan 항목만 뽑아 오늘 할 일로 자동 노출
+  const planItems = useMemo(() => {
+    const items: {
+      planId: string;
+      goal: string;
+      index: number;
+      title: string;
+      done: boolean;
+    }[] = [];
+    for (const p of plans) {
+      const dp = p.result?.dailyPlan ?? [];
+      dp.forEach((d, i) => {
+        if (d.date === date) {
+          items.push({
+            planId: p.id,
+            goal: p.goal,
+            index: i,
+            title: d.title,
+            done: (p.done_tasks ?? []).includes(i),
+          });
+        }
+      });
+    }
+    return items;
+  }, [plans, date]);
+
+  // 계획 항목 체크 → 해당 계획의 done_tasks 를 갱신(단일 소스: 계획 상세와 동기화됨)
+  async function togglePlanItem(planId: string, index: number) {
+    if (!supabase) return;
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const set = new Set(plan.done_tasks ?? []);
+    if (set.has(index)) set.delete(index);
+    else set.add(index);
+    const next = [...set].sort((a, b) => a - b);
+    setPlans((prev) =>
+      prev.map((p) => (p.id === planId ? { ...p, done_tasks: next } : p)),
+    );
+    await supabase.from("plans").update({ done_tasks: next }).eq("id", planId);
+  }
 
   useEffect(() => {
     load();
@@ -164,6 +214,33 @@ export default function HomeDashboard() {
                 <button className="task-del" onClick={() => deleteTask(t.id)} aria-label="삭제">✕</button>
               </div>
             ))}
+
+            {planItems.length > 0 && (
+              <div className="plan-items">
+                <div className="plan-items-h">📋 계획에서 온 오늘 항목</div>
+                {planItems.map((it) => (
+                  <div
+                    className={`task-row${it.done ? " done" : ""}`}
+                    key={`${it.planId}-${it.index}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={it.done}
+                      onChange={() => togglePlanItem(it.planId, it.index)}
+                    />
+                    <span className="task-title">
+                      {it.title}
+                      <span className="plan-src">· {it.goal}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tasks.length === 0 && planItems.length === 0 && (
+              <p className="empty">오늘 할 일이 없어요. 아래에 추가하거나 계획을 저장해보세요.</p>
+            )}
+
             <form onSubmit={addTask} className="task-add">
               <input
                 placeholder="+ 할 일 추가 후 Enter"
