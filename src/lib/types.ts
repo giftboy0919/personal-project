@@ -44,3 +44,39 @@ export interface SavedPlanRow {
   result: PlanResult;
   done_tasks: number[]; // 완료 체크한 dailyPlan 항목 인덱스
 }
+
+// ── 코어 엔티티 (공통 date 축으로 통합 대시보드를 구성) ──────
+
+/** 가계부 항목 */
+export interface TransactionRow {
+  id: string;
+  user_id: string;
+  date: string;
+  type: "income" | "expense";
+  amount: number;
+  category: string | null;
+  memo: string | null;
+  created_at: string;
+}
+
+/** 시간표 항목 */
+export interface ScheduleItemRow {
+  id: string;
+  user_id: string;
+  date: string;
+  start_time: string | null; // "HH:MM"
+  end_time: string | null;
+  title: string;
+  location: string | null;
+  created_at: string;
+}
+
+/** 개별 할 일(플래너) */
+export interface TaskRow {
+  id: string;
+  user_id: string;
+  date: string;
+  title: string;
+  done: boolean;
+  created_at: string;
+}
