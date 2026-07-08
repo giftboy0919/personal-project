@@ -1,0 +1,34 @@
+{
+  "index_id": "9급_커리큘럼_템플릿_인덱스",
+  "description": "직렬을 입력받아 해당 전공 템플릿을 DB에서 조회할 때 쓰는 매핑. 공통과목(국어·영어)은 전 직렬 공용이며, 한국사는 2027년부터 한능검 3급 이상으로 대체(응시요건)되므로 필기 템플릿 없음.",
+  "exam_reform_note": "2027년 개편 기준: 한국사 필기 제외 → 한능검 3급 대체, 4과목×25문항(공통 국어·영어 + 전공 2), 총 100문항/110분, 문항당 4점.",
+  "common_subjects": {
+    "국어": "template_common_korean.json",
+    "영어": "template_common_english.json",
+    "한국사": "필기 없음 — 한능검 3급 이상 응시요건으로 대체(유효기간 없음, 사전 취득 권장)"
+  },
+  "job_series_map": {
+    "일반행정직": {"전공": ["행정법총론", "행정학개론"], "templates": ["template_admin_admlaw.json", "template_admin_padmin.json"]},
+    "교육행정직(행정학 선택)": {"전공": ["행정법총론", "행정학개론"], "templates": ["template_admin_admlaw.json", "template_admin_padmin.json"], "note": "교육학개론 대신 행정학 선택 시 일반행정직과 동일. 교육학 선택 시 별도 템플릿 필요(미작성)"},
+    "세무직": {"전공": ["세법개론", "회계학"], "templates": ["template_tax_taxlaw.json", "template_tax_accounting.json"]},
+    "전산직": {"전공": ["컴퓨터일반", "정보보호론"], "templates": ["template_computer_general.json", "template_infosec.json"]},
+    "교정직": {"전공": ["교정학개론", "형사소송법개론"], "templates": ["template_correction_penology.json", "template_criminal_procedure.json"]},
+    "검찰직": {"전공": ["형법", "형사소송법"], "templates": ["template_criminal_law.json", "template_criminal_procedure.json"]},
+    "마약수사직": {"전공": ["형법", "형사소송법"], "templates": ["template_criminal_law.json", "template_criminal_procedure.json"], "note": "검찰직과 형법·형소법 공유"},
+    "철도경찰직": {"전공": ["형법", "형사소송법"], "templates": ["template_criminal_law.json", "template_criminal_procedure.json"], "note": "형법·형소법 공유"},
+    "고용노동직": {"전공": ["노동법개론", "행정법총론"], "templates": ["template_labor_law.json", "template_admin_admlaw.json"], "note": "행정법은 일반행정 템플릿 재사용"},
+    "사회복지직": {"전공": ["사회복지학개론", "행정법총론"], "templates": ["template_social_welfare.json", "template_admin_admlaw.json"], "note": "행정법은 일반행정 템플릿 재사용"},
+    "관세직": {"전공": ["관세법개론", "회계원리"], "templates": ["template_customs_law.json", "template_customs_accounting.json"]},
+    "통계직": {"전공": ["통계학개론", "경제학개론"], "templates": ["template_statistics.json", "template_statistics_economics.json"]},
+    "우정사업본부(우정9급 계리)": {"전공": "별도 시험구조", "templates": ["template_postal_gyeri.json"], "note": "국가직 9급 공채와 별개 시험. 우편·예금·보험·컴퓨터일반(기초영어 포함) 4과목, 한능검 3급 대체. 공통과목(국어·영어) 템플릿 미적용"}
+  },
+  "usage": {
+    "flow": "사용자가 직렬 입력 → job_series_map에서 전공 템플릿 조회 + common_subjects(국어·영어) → 목표 실력대(상/중/하) 선택 → 남은 기간·하루 가용시간 입력 → 각 템플릿의 master_question_bank × difficulty_tiers(문항당 시간) 로 총 소요시간 산출 → 남은 일수로 역산해 일별 캘린더 생성",
+    "notes": [
+      "회독 배수: 각 템플릿 STEP2(기출)는 3회독 권장 등 note를 반영해 문항수에 배수 적용",
+      "데일리 루틴: 영어 데일리보카, 전산 IT신용어, 계리 기초영어는 하루 가용시간에서 먼저 차감",
+      "물리적 검증: 총 소요시간 > 남은일수×하루가용시간이면 물량 축소안(고난도 비중 축소·회독 감소) 제안",
+      "리뷰데이: 주 1회 오답 복습일 고정 배치 권장"
+    ]
+  }
+}

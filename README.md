@@ -1,14 +1,22 @@
-# 통합 라이프 대시보드 · AI 목표 플래너 (웹 MVP)
+# 통합 라이프 대시보드 (웹 MVP)
 
-큰 목표를 입력하면 **AI(Claude)가 오늘부터 기한까지 하루 단위 실행 계획으로 역산해서 쪼개주는** 웹 앱입니다.
-(기획 문서의 핵심 "AI 전략 = 목표를 일간 단위로 역산해 배분"을 웹으로 먼저 구현한 MVP)
+**가계부 · 시간표 · AI 플래너를 한 화면에서** 관리하는 웹 앱. 3개 코어 엔티티가 공통 `date` 필드를
+공유해 "오늘" 화면에서 일정·할 일·지출을 한눈에 봅니다. (기획 문서의 통합 대시보드 설계를 웹으로 구현)
 
 - **프론트엔드**: Next.js (App Router, TypeScript) → **Vercel** 배포
+- **로그인/저장소**: **Supabase** (Auth + Postgres, 사용자별 RLS)
 - **AI**: Claude API (`ANTHROPIC_API_KEY`는 서버 라우트에서만 사용 → 브라우저에 노출 안 됨)
-- **백엔드/저장소**: **Supabase** (Postgres) — 만든 계획을 저장
 
-> 💡 **키가 하나도 없어도 실행됩니다.** `ANTHROPIC_API_KEY`가 없으면 자동으로 "데모 계획"을 보여주고,
-> Supabase 키가 없으면 "저장" 기능만 꺼집니다. 나중에 Vercel에 키를 넣으면 그대로 실기능으로 전환됩니다.
+### 주요 기능
+- **오늘 대시보드(`/`)** — 날짜별 일정·할 일(체크)·지출을 한 화면에
+- **가계부(`/ledger`)** — 수입/지출 기록, 월별 합계
+- **시간표(`/schedule`)** — 일자별 일정 관리
+- **AI 플래너(`/planner`)** — ① 자유 목표: 목표·기한·시간 입력 → Claude가 일간 계획 생성
+  ② **공무원 9급 시험 모드**: 직렬·목표등급 선택 → 문항수×난이도×기출 회독을 반영해 **규칙 기반 역산**으로 일별 캘린더 생성 (API 키 불필요)
+- **저장한 계획(`/plans`, `/plans/[id]`)** — 계획 저장 + 일자별 체크박스·진행률
+
+> 💡 **키가 없어도 실행됩니다.** Supabase 미설정 시 "데모 모드"(로그인 없이 AI 플래너 체험),
+> `ANTHROPIC_API_KEY` 미설정 시 자유목표는 데모 계획으로 폴백. 나중에 Vercel에 키를 넣으면 실기능 전환.
 
 ---
 
@@ -18,16 +26,23 @@
 life-dashboard/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx            # 메인 UI(입력 폼 + 결과 화면)
-│   │   ├── layout.tsx
-│   │   ├── globals.css
-│   │   └── api/plan/route.ts   # POST /api/plan — Claude 호출(서버 전용)
-│   └── lib/
-│       ├── types.ts            # 공유 타입
-│       ├── planPrompt.ts       # 시스템 프롬프트 + 출력 스키마 + 데모 계획
-│       └── supabaseClient.ts   # 브라우저용 Supabase 클라이언트
-├── supabase/schema.sql         # 저장 테이블(plans) 정의
-├── .env.local.example          # 환경변수 예시
+│   │   ├── page.tsx              # 오늘 통합 대시보드
+│   │   ├── ledger/page.tsx       # 가계부
+│   │   ├── schedule/page.tsx     # 시간표
+│   │   ├── planner/page.tsx      # AI 플래너(자유목표 + 공무원 시험모드)
+│   │   ├── plans/                # 저장한 계획 목록 + 상세(체크박스)
+│   │   ├── layout.tsx / globals.css
+│   │   └── api/plan/route.ts     # POST /api/plan — Claude 호출(서버 전용)
+│   ├── components/               # AppShell(내비/인증게이트), LoginForm
+│   ├── lib/
+│   │   ├── auth.tsx              # Supabase Auth 세션 컨텍스트
+│   │   ├── supabaseClient.ts     # 브라우저 Supabase 클라이언트
+│   │   ├── planPrompt.ts         # 자유목표 AI 프롬프트/스키마/데모
+│   │   ├── examData.ts           # 시험 템플릿 레지스트리(직렬→과목)
+│   │   └── examScheduler.ts      # 규칙 기반 역산 스케줄러
+│   └── data/exam/*.json          # 공무원 9급 직렬별 커리큘럼 템플릿(번들)
+├── supabase/schema.sql           # plans/transactions/schedule_items/tasks + RLS
+├── .env.local.example
 └── ...
 ```
 

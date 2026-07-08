@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { getSelectableSeries, templatesForSeries } from "@/lib/examData";
+import { computeExamPlan } from "@/lib/examScheduler";
 import type { PlanRequestBody, PlanResult } from "@/lib/types";
+
+const TIER_OPTIONS = ["상위권 (고득점)", "중위권 (안정권)", "하위권 (과락 탈출)"];
 
 function todayPlusDays(days: number): string {
   const d = new Date();
@@ -32,8 +36,46 @@ export default function PlannerPage() {
   );
   const [savedId, setSavedId] = useState<string | null>(null);
 
+  // ── 공무원 9급 시험 모드 ──
+  const series = useMemo(() => getSelectableSeries(), []);
+  const [mode, setMode] = useState<"free" | "exam">("free");
+  const [seriesIdx, setSeriesIdx] = useState(0);
+  const [tierIndex, setTierIndex] = useState(1); // 기본 중위권
+  const [examDeadline, setExamDeadline] = useState(todayPlusDays(90));
+  const [examHours, setExamHours] = useState(4);
+
   function update<K extends keyof PlanRequestBody>(key: K, value: PlanRequestBody[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleExamSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const s = series[seriesIdx];
+    if (!s) return;
+    setError(null);
+    setResult(null);
+    setSaveState("idle");
+    setSavedId(null);
+    try {
+      const plan = computeExamPlan({
+        templates: templatesForSeries(s),
+        jobSeriesLabel: s.key,
+        tierIndex,
+        deadline: examDeadline,
+        hoursPerDay: examHours,
+        todayISO: new Date().toISOString().slice(0, 10),
+      });
+      // 저장에 쓰이도록 form 메타도 채워둔다
+      setForm({
+        goal: `${s.key} 합격`,
+        deadline: examDeadline,
+        currentLevel: `${["상위권", "중위권", "하위권"][tierIndex]} 목표`,
+        hoursPerDay: examHours,
+      });
+      setResult(plan);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "계획 생성에 실패했습니다.");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -96,6 +138,24 @@ export default function PlannerPage() {
         <p>큰 목표를 입력하면, 오늘부터 기한까지 하루 단위 실행 계획으로 쪼개드려요.</p>
       </header>
 
+      <div className="seg mode-seg">
+        <button
+          type="button"
+          className={`seg-btn${mode === "free" ? " active" : ""}`}
+          onClick={() => setMode("free")}
+        >
+          자유 목표
+        </button>
+        <button
+          type="button"
+          className={`seg-btn${mode === "exam" ? " active" : ""}`}
+          onClick={() => setMode("exam")}
+        >
+          공무원 9급 시험
+        </button>
+      </div>
+
+      {mode === "free" && (
       <form className="card" onSubmit={handleSubmit}>
         <div className="field">
           <label htmlFor="goal">목표 <span className="hint">달성하고 싶은 큰 목표</span></label>
@@ -155,6 +215,81 @@ export default function PlannerPage() {
 
         {error && <p className="error">{error}</p>}
       </form>
+      )}
+
+      {mode === "exam" && (
+      <form className="card" onSubmit={handleExamSubmit}>
+        {series.length === 0 ? (
+          <p className="save-note">사용 가능한 직렬 템플릿이 없습니다.</p>
+        ) : (
+          <>
+            <div className="field">
+              <label htmlFor="series">응시 직렬</label>
+              <select
+                id="series"
+                value={seriesIdx}
+                onChange={(e) => setSeriesIdx(Number(e.target.value))}
+              >
+                {series.map((s, i) => (
+                  <option key={s.key} value={i}>
+                    {s.key} — {s.majors.join(" · ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>목표 등급</label>
+              <div className="seg">
+                {TIER_OPTIONS.map((lbl, i) => (
+                  <button
+                    type="button"
+                    key={i}
+                    className={`seg-btn${tierIndex === i ? " active" : ""}`}
+                    onClick={() => setTierIndex(i)}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label htmlFor="exam-date">시험(목표) 날짜</label>
+                <input
+                  id="exam-date"
+                  type="date"
+                  value={examDeadline}
+                  min={todayPlusDays(1)}
+                  onChange={(e) => setExamDeadline(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="exam-hours">하루 공부 시간 <span className="hint">(시간)</span></label>
+                <input
+                  id="exam-hours"
+                  type="number"
+                  min={1}
+                  step={0.5}
+                  value={examHours}
+                  onChange={(e) => setExamHours(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <button className="btn btn-primary" type="submit">
+              📚 시험 역산 계획 만들기
+            </button>
+            <p className="save-note" style={{ marginTop: 12 }}>
+              공통과목(국어·영어) + 전공 2과목의 문항수·난이도·기출 회독을 반영해 남은 기간으로
+              역산합니다. (규칙 기반 — API 키 불필요)
+            </p>
+          </>
+        )}
+        {error && <p className="error">{error}</p>}
+      </form>
+      )}
 
       {result && (
         <section className="results">
