@@ -781,6 +781,63 @@ body {
   margin: 0 auto 20px;
 }
 
+/* 시간표 스크린샷 자동배치 */
+.study-items {
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.study-list {
+  color: var(--muted);
+}
+.tt-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin: 4px 0 14px;
+}
+.vision-result {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.busy-row {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  padding: 6px 0;
+  color: var(--muted);
+}
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+  cursor: pointer;
+}
+.place-row:last-of-type {
+  border-bottom: none;
+}
+.place-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.place-title {
+  font-weight: 600;
+}
+.field input[type="file"] {
+  padding: 10px;
+  font-size: 14px;
+}
+
 /* AI 공부법 코멘트 */
 .tip-h {
   font-size: 13px;
