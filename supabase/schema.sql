@@ -10,8 +10,12 @@ create table if not exists public.plans (
   deadline      date not null,
   current_level text,
   hours_per_day numeric not null,
-  result        jsonb not null           -- AI가 만든 계획 전체(summary/milestones/dailyPlan/…)를 통째로 보관
+  result        jsonb not null,          -- AI가 만든 계획 전체(summary/milestones/dailyPlan/…)를 통째로 보관
+  done_tasks    jsonb not null default '[]'::jsonb  -- 완료 체크한 일자별 항목의 인덱스 배열 (예: [0, 2, 5])
 );
+
+-- 이미 plans 테이블을 만든 뒤라면 이 한 줄로 컬럼만 추가된다(재실행 안전).
+alter table public.plans add column if not exists done_tasks jsonb not null default '[]'::jsonb;
 
 -- RLS(행 수준 보안) 활성화.
 alter table public.plans enable row level security;
@@ -30,3 +34,11 @@ create policy "anon can read plans"
   on public.plans for select
   to anon
   using (true);
+
+-- 체크박스(완료 상태) 저장을 위해 update 도 허용.
+drop policy if exists "anon can update plans" on public.plans;
+create policy "anon can update plans"
+  on public.plans for update
+  to anon
+  using (true)
+  with check (true);

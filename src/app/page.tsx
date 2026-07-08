@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import type { PlanRequestBody, PlanResult } from "@/lib/types";
 
@@ -32,6 +33,7 @@ export default function Home() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
   );
+  const [savedId, setSavedId] = useState<string | null>(null);
 
   function update<K extends keyof PlanRequestBody>(key: K, value: PlanRequestBody[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -70,19 +72,34 @@ export default function Home() {
   async function handleSave() {
     if (!supabase || !result) return;
     setSaveState("saving");
-    const { error: dbError } = await supabase.from("plans").insert({
-      goal: form.goal,
-      deadline: form.deadline,
-      current_level: form.currentLevel,
-      hours_per_day: form.hoursPerDay,
-      result, // jsonb 컬럼에 통째로 저장
-    });
-    setSaveState(dbError ? "error" : "saved");
-    if (dbError) console.error("[save] Supabase insert 실패:", dbError);
+    const { data, error: dbError } = await supabase
+      .from("plans")
+      .insert({
+        goal: form.goal,
+        deadline: form.deadline,
+        current_level: form.currentLevel,
+        hours_per_day: form.hoursPerDay,
+        result, // jsonb 컬럼에 통째로 저장
+      })
+      .select("id")
+      .single();
+    if (dbError) {
+      setSaveState("error");
+      console.error("[save] Supabase insert 실패:", dbError);
+    } else {
+      setSavedId((data as { id: string }).id);
+      setSaveState("saved");
+    }
   }
 
   return (
     <main className="page">
+      <div className="topbar topbar-end">
+        <Link href="/plans" className="back-link">
+          저장한 계획 →
+        </Link>
+      </div>
+
       <header className="hero">
         <span className="badge">통합 라이프 대시보드 · MVP</span>
         <h1>AI 목표 플래너</h1>
@@ -221,7 +238,12 @@ export default function Home() {
                       : "💾 이 계획 저장하기"}
                 </button>
                 {saveState === "saved" && (
-                  <span className="save-ok">Supabase에 저장되었습니다.</span>
+                  <span className="save-ok">
+                    저장되었습니다.{" "}
+                    {savedId && (
+                      <Link href={`/plans/${savedId}`}>계획 열어 체크하기 →</Link>
+                    )}
+                  </span>
                 )}
                 {saveState === "error" && (
                   <span className="error">저장 실패 — 콘솔을 확인하세요.</span>

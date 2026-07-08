@@ -32,3 +32,15 @@ export interface PlanResult {
   encouragement: string; // 응원 한마디
   isDemo?: boolean; // API 키 없이 데모 데이터로 생성된 경우 true
 }
+
+/** Supabase `plans` 테이블의 한 행 */
+export interface SavedPlanRow {
+  id: string;
+  created_at: string;
+  goal: string;
+  deadline: string;
+  current_level: string | null;
+  hours_per_day: number;
+  result: PlanResult;
+  done_tasks: number[]; // 완료 체크한 dailyPlan 항목 인덱스
+}
