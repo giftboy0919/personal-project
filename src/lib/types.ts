@@ -24,6 +24,13 @@ export interface DailyTask {
   estimatedMinutes: number;
 }
 
+/** 공무원 시험 모드에서 Claude가 얹는 공부법 코멘트(선택) */
+export interface ExamNotes {
+  overallStrategy: string; // 전체 학습 전략 2~3문장
+  subjectTips: { subject: string; tip: string }[]; // 과목별 공부법
+  stageTips: { step: string; tip: string }[]; // 단계(STEP)별 팁
+}
+
 /** AI가 돌려주는 전체 결과 */
 export interface PlanResult {
   summary: string; // 전략 한두 문장 요약
@@ -31,6 +38,7 @@ export interface PlanResult {
   dailyPlan: DailyTask[];
   encouragement: string; // 응원 한마디
   isDemo?: boolean; // API 키 없이 데모 데이터로 생성된 경우 true
+  examNotes?: ExamNotes; // 시험 모드에서 Claude 코멘트가 있으면 채워짐
 }
 
 /** Supabase `plans` 테이블의 한 행 */

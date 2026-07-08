@@ -175,6 +175,33 @@ export default function PlanDetailPage({
               </div>
             )}
 
+            {row.result.examNotes && (
+              <div className="card">
+                <h2 className="section-title">🤖 AI 공부법 코멘트</h2>
+                <p className="summary">{row.result.examNotes.overallStrategy}</p>
+                {row.result.examNotes.subjectTips?.length > 0 && (
+                  <>
+                    <h3 className="tip-h">과목별</h3>
+                    {row.result.examNotes.subjectTips.map((x, i) => (
+                      <div className="tip" key={i}>
+                        <b>{x.subject}</b> {x.tip}
+                      </div>
+                    ))}
+                  </>
+                )}
+                {row.result.examNotes.stageTips?.length > 0 && (
+                  <>
+                    <h3 className="tip-h">단계별</h3>
+                    {row.result.examNotes.stageTips.map((x, i) => (
+                      <div className="tip" key={i}>
+                        <b>{x.step}</b> {x.tip}
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+
             {row.result.encouragement && (
               <div className="encourage">{row.result.encouragement}</div>
             )}

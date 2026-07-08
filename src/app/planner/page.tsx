@@ -43,12 +43,13 @@ export default function PlannerPage() {
   const [tierIndex, setTierIndex] = useState(1); // 기본 중위권
   const [examDeadline, setExamDeadline] = useState(todayPlusDays(90));
   const [examHours, setExamHours] = useState(4);
+  const [notesLoading, setNotesLoading] = useState(false);
 
   function update<K extends keyof PlanRequestBody>(key: K, value: PlanRequestBody[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function handleExamSubmit(e: React.FormEvent) {
+  async function handleExamSubmit(e: React.FormEvent) {
     e.preventDefault();
     const s = series[seriesIdx];
     if (!s) return;
@@ -56,8 +57,11 @@ export default function PlannerPage() {
     setResult(null);
     setSaveState("idle");
     setSavedId(null);
+
+    const tierLabel = ["상위권", "중위권", "하위권"][tierIndex];
+    let plan;
     try {
-      const plan = computeExamPlan({
+      plan = computeExamPlan({
         templates: templatesForSeries(s),
         jobSeriesLabel: s.key,
         tierIndex,
@@ -69,12 +73,46 @@ export default function PlannerPage() {
       setForm({
         goal: `${s.key} 합격`,
         deadline: examDeadline,
-        currentLevel: `${["상위권", "중위권", "하위권"][tierIndex]} 목표`,
+        currentLevel: `${tierLabel} 목표`,
         hoursPerDay: examHours,
       });
       setResult(plan);
     } catch (err) {
       setError(err instanceof Error ? err.message : "계획 생성에 실패했습니다.");
+      return;
+    }
+
+    // 하이브리드: 규칙 기반 계획 위에 Claude 공부법 코멘트를 얹는다(선택/실패 시 스킵)
+    try {
+      setNotesLoading(true);
+      const templates = templatesForSeries(s);
+      const subjects = templates
+        .filter((t) => t.subject?.name)
+        .map((t) => ({
+          name: t.subject!.name as string,
+          stages: (t.stages ?? []).map((st) => ({ step: st.step, name: st.name })),
+        }));
+      const feasible = !plan.summary.includes("⚠️");
+      const res = await fetch("/api/exam-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobSeries: s.key,
+          tierLabel,
+          deadline: examDeadline,
+          hoursPerDay: examHours,
+          feasible,
+          subjects,
+        }),
+      });
+      if (res.ok && res.status !== 204) {
+        const notes = await res.json();
+        setResult((prev) => (prev ? { ...prev, examNotes: notes } : prev));
+      }
+    } catch {
+      /* 코멘트는 부가기능이므로 실패해도 무시 */
+    } finally {
+      setNotesLoading(false);
     }
   }
 
@@ -345,6 +383,45 @@ export default function PlannerPage() {
 
           {result.encouragement && (
             <div className="encourage">{result.encouragement}</div>
+          )}
+
+          {notesLoading && !result.examNotes && (
+            <div className="card">
+              <p className="save-note">
+                <span
+                  className="spinner"
+                  style={{ borderColor: "var(--border)", borderTopColor: "var(--brand)" }}
+                />{" "}
+                AI 공부법 코멘트 생성 중…
+              </p>
+            </div>
+          )}
+
+          {result.examNotes && (
+            <div className="card">
+              <h2 className="section-title">🤖 AI 공부법 코멘트</h2>
+              <p className="summary">{result.examNotes.overallStrategy}</p>
+              {result.examNotes.subjectTips?.length > 0 && (
+                <>
+                  <h3 className="tip-h">과목별</h3>
+                  {result.examNotes.subjectTips.map((x, i) => (
+                    <div className="tip" key={i}>
+                      <b>{x.subject}</b> {x.tip}
+                    </div>
+                  ))}
+                </>
+              )}
+              {result.examNotes.stageTips?.length > 0 && (
+                <>
+                  <h3 className="tip-h">단계별</h3>
+                  {result.examNotes.stageTips.map((x, i) => (
+                    <div className="tip" key={i}>
+                      <b>{x.step}</b> {x.tip}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
           )}
 
           <div className="card">

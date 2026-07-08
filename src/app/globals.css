@@ -764,6 +764,25 @@ body {
   margin: 0 auto 20px;
 }
 
+/* AI 공부법 코멘트 */
+.tip-h {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  margin: 16px 0 8px;
+}
+.tip {
+  font-size: 14px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.tip:last-child {
+  border-bottom: none;
+}
+.tip b {
+  color: var(--text);
+}
+
 /* select 를 input 과 동일한 스타일로 */
 .field select {
   width: 100%;
