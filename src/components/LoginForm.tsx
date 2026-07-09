@@ -38,7 +38,7 @@ export default function LoginForm() {
       <header className="hero">
         <span className="badge">통합 라이프 대시보드</span>
         <h1>{mode === "signin" ? "로그인" : "회원가입"}</h1>
-        <p>가계부 · 시간표 · 플래너를 한 화면에서 관리하세요.</p>
+        <p>가계부 · 캘린더 · 플래너를 한 화면에서 관리하세요.</p>
       </header>
 
       <form className="card" onSubmit={handleSubmit}>

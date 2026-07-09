@@ -9,7 +9,7 @@ import LoginForm from "./LoginForm";
 const NAV = [
   { href: "/", label: "오늘" },
   { href: "/ledger", label: "가계부" },
-  { href: "/schedule", label: "시간표" },
+  { href: "/schedule", label: "캘린더" },
   { href: "/planner", label: "AI 플래너" },
   { href: "/plans", label: "저장한 계획" },
 ];
