@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { getSelectableSeries, templatesForSeries } from "@/lib/examData";
 import { computeExamPlan } from "@/lib/examScheduler";
+import { pushDailyPlanToCalendar } from "@/lib/calendarPush";
 import type { PlanRequestBody, PlanResult } from "@/lib/types";
 
 const TIER_OPTIONS = ["상위권 (고득점)", "중위권 (안정권)", "하위권 (과락 탈출)"];
@@ -36,6 +37,11 @@ export default function PlannerPage() {
   );
   const [savedId, setSavedId] = useState<string | null>(null);
 
+  // ── 캘린더에 일정으로 등록 ──
+  const [calStartTime, setCalStartTime] = useState("19:00");
+  const [calState, setCalState] = useState<"idle" | "pushing" | "done" | "error">("idle");
+  const [calMsg, setCalMsg] = useState<string | null>(null);
+
   // ── 공무원 9급 시험 모드 ──
   const series = useMemo(() => getSelectableSeries(), []);
   const [mode, setMode] = useState<"free" | "exam">("free");
@@ -57,6 +63,8 @@ export default function PlannerPage() {
     setResult(null);
     setSaveState("idle");
     setSavedId(null);
+    setCalState("idle");
+    setCalMsg(null);
 
     const tierLabel = ["상위권", "중위권", "하위권"][tierIndex];
     let plan;
@@ -122,6 +130,8 @@ export default function PlannerPage() {
     setResult(null);
     setSaveState("idle");
     setSavedId(null);
+    setCalState("idle");
+    setCalMsg(null);
 
     if (!form.goal.trim()) {
       setError("목표를 입력해주세요.");
@@ -165,6 +175,28 @@ export default function PlannerPage() {
     } else {
       setSavedId((data as { id: string }).id);
       setSaveState("saved");
+    }
+  }
+
+  async function handlePushToCalendar() {
+    if (!supabase || !result?.dailyPlan?.length) return;
+    setCalState("pushing");
+    setCalMsg(null);
+    try {
+      const { inserted, skipped } = await pushDailyPlanToCalendar(
+        supabase,
+        result.dailyPlan,
+        calStartTime,
+      );
+      setCalState("done");
+      setCalMsg(
+        skipped > 0
+          ? `${inserted}개 일정을 캘린더에 등록했어요. (이미 등록된 ${skipped}개는 건너뜀)`
+          : `${inserted}개 일정을 캘린더에 등록했어요.`,
+      );
+    } catch (err) {
+      setCalState("error");
+      setCalMsg(err instanceof Error ? err.message : "캘린더 등록에 실패했습니다.");
     }
   }
 
@@ -420,6 +452,49 @@ export default function PlannerPage() {
                     </div>
                   ))}
                 </>
+              )}
+            </div>
+          )}
+
+          {result.dailyPlan?.length > 0 && (
+            <div className="card">
+              <h2 className="section-title">📅 캘린더에 일정으로 등록</h2>
+              {isSupabaseConfigured ? (
+                <>
+                  <p className="save-note" style={{ marginTop: 0, marginBottom: 12 }}>
+                    일자별 계획을 매일 정해진 시각부터 캘린더 일정으로 만들어드려요.
+                    캘린더의 월/주/일 뷰에서 바로 볼 수 있고, 이미 등록된 날짜는 건너뜁니다.
+                  </p>
+                  <div className="row">
+                    <div className="field">
+                      <label htmlFor="cal-start">매일 시작 시간</label>
+                      <input
+                        id="cal-start"
+                        type="time"
+                        value={calStartTime}
+                        onChange={(e) => setCalStartTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={handlePushToCalendar}
+                    disabled={calState === "pushing"}
+                  >
+                    {calState === "pushing" ? (
+                      <>
+                        <span className="spinner" style={{ borderColor: "var(--border)", borderTopColor: "var(--brand)" }} />{" "}
+                        등록 중…
+                      </>
+                    ) : (
+                      <>📅 캘린더로 옮기기</>
+                    )}
+                  </button>
+                  {calState === "done" && <p className="save-ok" style={{ marginTop: 10 }}>{calMsg}</p>}
+                  {calState === "error" && <p className="error">{calMsg}</p>}
+                </>
+              ) : (
+                <p className="save-note">로그인(Supabase 설정) 후 캘린더에 등록할 수 있습니다.</p>
               )}
             </div>
           )}

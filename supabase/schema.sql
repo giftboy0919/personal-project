@@ -16,10 +16,14 @@ create table if not exists public.plans (
   current_level text,
   hours_per_day numeric not null,
   result        jsonb not null,
-  done_tasks    jsonb not null default '[]'::jsonb
+  done_tasks    jsonb not null default '[]'::jsonb,
+  difficulty    jsonb not null default '{}'::jsonb
 );
 alter table public.plans add column if not exists done_tasks jsonb not null default '[]'::jsonb;
 alter table public.plans add column if not exists user_id uuid references auth.users(id) default auth.uid();
+-- difficulty: dailyPlan 인덱스(문자열 키) → "매우 어려움"|"어려움"|"보통"|"쉬움"|"매우 쉬움"
+-- 완료 체크 시 함께 기록되며, 복습이 필요한 단원을 자동으로 뽑아내는 데 쓰인다.
+alter table public.plans add column if not exists difficulty jsonb not null default '{}'::jsonb;
 
 -- ── 2. transactions (가계부) ────────────────────────────────
 create table if not exists public.transactions (

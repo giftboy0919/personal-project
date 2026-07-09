@@ -1183,3 +1183,115 @@ body {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
+
+/* ══════════════════════════════════════════════════════
+   난이도 설문 & 복습 단원
+   ══════════════════════════════════════════════════════ */
+
+/* 5단계 색상 스케일: 0=매우어려움(빨강) → 4=매우쉬움(초록) */
+:root {
+  --diff-0: #ef4444;
+  --diff-1: #f59e0b;
+  --diff-2: #9ca3af;
+  --diff-3: #60c99a;
+  --diff-4: #10b981;
+}
+
+.diff-prompt {
+  margin: 4px 0 10px 28px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  animation: diff-in 0.15s ease;
+}
+@keyframes diff-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.diff-prompt-h {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.diff-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.diff-opt {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.diff-opt.diff-0:hover { border-color: var(--diff-0); color: var(--diff-0); background: color-mix(in srgb, var(--diff-0) 10%, var(--card)); }
+.diff-opt.diff-1:hover { border-color: var(--diff-1); color: var(--diff-1); background: color-mix(in srgb, var(--diff-1) 10%, var(--card)); }
+.diff-opt.diff-2:hover { border-color: var(--diff-2); color: var(--diff-2); background: color-mix(in srgb, var(--diff-2) 12%, var(--card)); }
+.diff-opt.diff-3:hover { border-color: var(--diff-3); color: var(--diff-3); background: color-mix(in srgb, var(--diff-3) 10%, var(--card)); }
+.diff-opt.diff-4:hover { border-color: var(--diff-4); color: var(--diff-4); background: color-mix(in srgb, var(--diff-4) 10%, var(--card)); }
+.diff-cancel {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.diff-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+}
+.diff-badge.sm {
+  font-size: 10px;
+  padding: 1px 7px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.diff-badge-0 { background: var(--diff-0); }
+.diff-badge-1 { background: var(--diff-1); }
+.diff-badge-2 { background: var(--diff-2); }
+.diff-badge-3 { background: var(--diff-3); }
+.diff-badge-4 { background: var(--diff-4); }
+
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.review-row:last-child {
+  border-bottom: none;
+}
+.review-body {
+  flex: 1;
+  min-width: 0;
+}
+.review-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.review-date {
+  font-size: 12px;
+  color: var(--muted);
+}

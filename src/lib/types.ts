@@ -41,6 +41,21 @@ export interface PlanResult {
   examNotes?: ExamNotes; // 시험 모드에서 Claude 코멘트가 있으면 채워짐
 }
 
+/** 학습 난이도 5단계 — 완료 체크 시 설문으로 받는다 */
+export const DIFFICULTY_LEVELS = [
+  "매우 어려움",
+  "어려움",
+  "보통",
+  "쉬움",
+  "매우 쉬움",
+] as const;
+export type DifficultyLevel = (typeof DIFFICULTY_LEVELS)[number];
+
+/** "매우 어려움"/"어려움"으로 표시된 항목 = 복습이 필요한 단원 */
+export function needsReview(level: DifficultyLevel | undefined): boolean {
+  return level === "매우 어려움" || level === "어려움";
+}
+
 /** Supabase `plans` 테이블의 한 행 */
 export interface SavedPlanRow {
   id: string;
@@ -51,6 +66,7 @@ export interface SavedPlanRow {
   hours_per_day: number;
   result: PlanResult;
   done_tasks: number[]; // 완료 체크한 dailyPlan 항목 인덱스
+  difficulty: Record<number, DifficultyLevel>; // dailyPlan 인덱스 → 난이도 응답
 }
 
 // ── 코어 엔티티 (공통 date 축으로 통합 대시보드를 구성) ──────
